@@ -19,7 +19,11 @@
       throw new Error("검색 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
     }
 
-    const data=await response.json().catch(()=>({}));
+    const isJson=response.headers.get("content-type")?.includes("application/json");
+    const data=isJson?await response.json().catch(()=>({})):{};
+    if(!isJson){
+      throw new Error("검색 API 대신 로그인 또는 HTML 페이지가 반환되었습니다. Vercel 배포 보호 설정을 확인해 주세요.");
+    }
     if(!response.ok){
       throw new Error(data.error||"검색 서버에서 요청을 처리하지 못했습니다.");
     }
@@ -34,7 +38,7 @@
   function renderPlace(data){const p=data.place;state.selected=p;$("#candidateSection").hidden=true;$("#placeName").textContent=p.name;$("#placeAddress").textContent=p.address;$("#latitude").textContent=p.latitude;$("#longitude").textContent=p.longitude;$("#kakaoMapLink").href=p.kakaoMapUrl;$("#naverMapLink").href=p.naverMapUrl;const cards=[createTransportCard("가장 가까운 지하철역",data.subway),createTransportCard("가장 가까운 버스정류장",data.busStop)].filter(Boolean);$("#transportCards").replaceChildren(...cards);const phoneWrap=$("#phoneWrap");if(p.phone){$("#phoneLink").textContent=p.phone;$("#phoneLink").href=`tel:${p.phone.replace(/[^+\d]/g,"")}`;phoneWrap.hidden=false}else phoneWrap.hidden=true;$("#placeSection").hidden=false;setStatus("");$("#placeSection").scrollIntoView({behavior:"smooth",block:"start"})}
 
   async function selectPlace(place){setStatus("교통 정보를 불러오는 중입니다...");try{const data=await request({q:state.query,placeId:place.id});renderPlace(data)}catch(error){setStatus(error.message,true)}}
-  async function search(query){const clean=query.trim();if(!clean)return;state.query=clean;setStatus("장소를 검색하는 중입니다...");$("#candidateSection").hidden=true;$("#placeSection").hidden=true;try{const data=await request({q:clean});if(!data.places.length){setStatus("검색 결과가 없습니다.",true);return}renderCandidates(data.places);setStatus(`${data.places.length}개의 결과를 찾았습니다.`);if(data.places.length===1)await selectPlace(data.places[0])}catch(error){setStatus(error.message,true)}}
+  async function search(query){const clean=query.trim();if(!clean)return;state.query=clean;setStatus("장소를 검색하는 중입니다...");$("#candidateSection").hidden=true;$("#placeSection").hidden=true;try{const data=await request({q:clean});if(!Array.isArray(data.places)){throw new Error("검색 서버 응답 형식이 올바르지 않습니다.")}if(!data.places.length){setStatus("검색 결과가 없습니다.",true);return}renderCandidates(data.places);setStatus(`${data.places.length}개의 결과를 찾았습니다.`);if(data.places.length===1)await selectPlace(data.places[0])}catch(error){setStatus(error.message,true)}}
   $("#searchForm").addEventListener("submit",event=>{event.preventDefault();search($("#searchInput").value)});
   $("#shareButton").addEventListener("click",async()=>{const compact=state.query.replace(/\s+/g,"");const url=new URL(location.href);url.search="";url.searchParams.set("q",compact);try{await copyText(url.href);showToast("공유 링크가 복사되었습니다.")}catch{showToast("링크를 복사하지 못했습니다.")}});
   const initialQuery=new URLSearchParams(location.search).get("q");

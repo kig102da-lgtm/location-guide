@@ -58,6 +58,8 @@ KAKAO_REST_API_KEY=
 
 환경변수를 배포 후 추가하거나 변경했다면 새 배포를 실행해야 함수에 반영됩니다.
 
+카카오톡 등 로그인하지 않은 사용자에게 공유하려면 Vercel의 **Settings → Deployment Protection**에서 Production 배포가 Vercel Authentication으로 보호되지 않는지도 확인합니다. 보호된 배포는 사이트와 `/api/search` 대신 Vercel 로그인 페이지로 이동합니다.
+
 ### Vercel 대시보드에서 환경변수 추가
 
 1. 프로젝트의 **Settings → Environment Variables**로 이동합니다.
@@ -134,8 +136,9 @@ https://배포주소/?q=원불교서울교당
 
 - **파일을 직접 열었다는 안내:** 정상입니다. Vercel에 배포하거나 `vercel dev`를 실행하세요.
 - **검색 서버에 연결할 수 없습니다:** 배포 상태와 `/api/search` 함수 로그를 확인하세요.
+- **로그인 또는 HTML 페이지가 반환됨:** Vercel의 Production Deployment Protection을 해제하고 다시 접속하세요.
 - **API 키가 설정되지 않았습니다:** Vercel 환경변수를 추가하고 재배포하세요.
-- **카카오 API 인증 실패:** REST API 키인지 확인하고 키 앞뒤의 공백을 제거한 뒤 재배포하세요.
+- **카카오 API 인증 실패:** JavaScript 키가 아닌 REST API 키인지 확인하고, 따옴표나 앞뒤 공백 없이 `KAKAO_REST_API_KEY`에 저장한 뒤 재배포하세요.
 - **검색 결과가 없음:** 카카오 Local API가 해당 검색어의 장소를 반환하지 않은 경우입니다.
 
 ## Open Graph
