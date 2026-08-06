@@ -1,5 +1,17 @@
 const KAKAO_BASE_URL = "https://dapi.kakao.com";
 
+function getKakaoApiKey() {
+  const value = process.env.KAKAO_REST_API_KEY?.trim() || "";
+  const quote = value[0];
+
+  // Vercel values should not be quoted, but tolerate a commonly pasted pair.
+  if ((quote === "\"" || quote === "'") && value.at(-1) === quote) {
+    return value.slice(1, -1).trim();
+  }
+
+  return value;
+}
+
 function getQueryValue(value) {
   return Array.isArray(value) ? value[0] : value || "";
 }
@@ -23,9 +35,21 @@ async function requestKakao(path, parameters, apiKey) {
   // URLSearchParams가 검색어를 포함한 모든 값을 안전하게 URL 인코딩합니다.
   url.search = safeParameters.toString();
 
-  const kakaoResponse = await fetch(url, {
-    headers: { Authorization: `KakaoAK ${apiKey}` }
-  });
+  let kakaoResponse;
+  try {
+    kakaoResponse = await fetch(url, {
+      headers: {
+        Accept: "application/json",
+        Authorization: `KakaoAK ${apiKey}`
+      },
+      signal: AbortSignal.timeout(8000)
+    });
+  } catch (cause) {
+    const error = new Error("카카오 API에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    error.code = cause?.name === "TimeoutError" ? "KAKAO_TIMEOUT" : "KAKAO_UNAVAILABLE";
+    error.cause = cause;
+    throw error;
+  }
 
   const responseText = await kakaoResponse.text();
   let responseBody;
@@ -44,10 +68,27 @@ async function requestKakao(path, parameters, apiKey) {
     );
     error.status = kakaoResponse.status;
     error.kakaoCode = responseBody.code;
+    error.code = kakaoResponse.status === 401 || kakaoResponse.status === 403
+      ? "KAKAO_AUTH_FAILED"
+      : "KAKAO_REQUEST_FAILED";
     throw error;
   }
 
   return responseBody;
+}
+
+async function requestOptionalKakao(path, parameters, apiKey) {
+  try {
+    return await requestKakao(path, parameters, apiKey);
+  } catch (error) {
+    console.warn("Optional Kakao API request failed", {
+      path,
+      status: error.status,
+      kakaoCode: error.kakaoCode,
+      code: error.code
+    });
+    return null;
+  }
 }
 
 function mapPlace(place) {
@@ -82,7 +123,7 @@ async function findNearby(destination, apiKey, type) {
 async function findWalkRoute(start, destination, apiKey) {
   if (!start) return null;
 
-  const result = await requestKakao("/v2/routing/walk", {
+  const result = await requestOptionalKakao("/v2/routing/walk", {
     start_x: start.x,
     start_y: start.y,
     end_x: destination.x,
@@ -90,7 +131,7 @@ async function findWalkRoute(start, destination, apiKey) {
     route_mode: "SHORTEST"
   }, apiKey);
 
-  if (result.status !== "OK" || !result.route?.properties) return null;
+  if (result?.status !== "OK" || !result.route?.properties) return null;
 
   return {
     distance: result.route.properties.totalDistance,
@@ -105,7 +146,7 @@ export default async function handler(request, response) {
     return sendJson(response, 405, { error: "GET 요청만 지원합니다." });
   }
 
-  const apiKey = process.env.KAKAO_REST_API_KEY;
+  const apiKey = getKakaoApiKey();
   if (!apiKey) {
     return sendJson(response, 500, {
       error: "검색 서버의 API 키가 설정되지 않았습니다."
@@ -159,10 +200,12 @@ export default async function handler(request, response) {
     console.error("Kakao API request failed", {
       status: error.status,
       kakaoCode: error.kakaoCode,
+      code: error.code,
       message: error.message
     });
     return sendJson(response, 502, {
-      error: error.message || "카카오 장소 검색에 실패했습니다."
+      error: error.message || "카카오 장소 검색에 실패했습니다.",
+      code: error.code || "KAKAO_REQUEST_FAILED"
     });
   }
 }
