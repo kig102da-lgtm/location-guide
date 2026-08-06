@@ -22,13 +22,18 @@
   <a class="skip-link" href="#main">본문으로 바로가기</a>
   <main id="main" class="app-shell">
     <section class="search-panel" aria-labelledby="pageTitle">
-      <div class="brand-mark" aria-hidden="true">●</div>
-      <p class="eyebrow">위치 안내</p>
-      <h1 id="pageTitle">어디를 방문하시나요?</h1>
+      <img class="brand-logo" src="gyeongin-logo.png" alt="경인교구">
+      <h1 id="pageTitle">열린 교화, 친절한 교당</h1>
       <form id="searchForm" class="search-form" role="search">
         <label class="sr-only" for="searchInput">방문할 장소</label>
         <input id="searchInput" name="q" type="search" placeholder="예: 원불교 서울교당" autocomplete="off" required maxlength="80">
-        <button type="submit"><span aria-hidden="true">⌕</span> 검색</button>
+        <button type="submit">
+          <svg class="search-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none">
+            <circle cx="11" cy="11" r="6.5"></circle>
+            <path d="m16 16 4 4"></path>
+          </svg>
+          <span>찾아보기</span>
+        </button>
       </form>
       <p id="status" class="status" role="status" aria-live="polite"></p>
     </section>
@@ -46,10 +51,6 @@
           <div><p class="eyebrow">오시는 길</p><h2 id="placeName"></h2></div>
         </div>
         <p id="placeAddress" class="address"></p>
-        <dl class="coordinates">
-          <div><dt>위도</dt><dd id="latitude"></dd></div>
-          <div><dt>경도</dt><dd id="longitude"></dd></div>
-        </dl>
         <div class="map-actions">
           <a id="kakaoMapLink" class="map-button kakao" target="_blank" rel="noopener noreferrer">K 카카오맵</a>
           <a id="naverMapLink" class="map-button naver" target="_blank" rel="noopener noreferrer">N 네이버지도</a>
