@@ -40,7 +40,14 @@ test("partial searches rank the closest temple first", () => {
 
 test("current optional data matches the authoritative workbook", () => {
   assert.equal(temples.filter(({ blog }) => blog).length, 28);
-  assert.equal(temples.filter(({ youtube }) => youtube).length, 0);
+  assert.equal(temples.filter(({ youtube }) => youtube).length, 41);
+  assert.deepEqual(
+    temples.filter(({ youtube }) => !youtube).map(({ name }) => name).sort(),
+    ["번개교당", "병점교당", "안성교당"].sort(),
+  );
+  for (const { youtube } of temples.filter(({ youtube }) => youtube)) {
+    assert.match(youtube, /^https:\/\/www\.youtube\.com\/watch\?v=[\w-]+$/);
+  }
   assert.ok(temples.some(({ phone }) => !phone));
 });
 
