@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="원불교 서울교당의 가장 가까운 지하철역과 버스정류장을 확인하세요.">
+  <meta name="theme-color" content="#f4f8ff">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="ko_KR">
+  <meta property="og:title" content="원불교 서울교당 오시는 길">
+  <meta property="og:description" content="가장 가까운 지하철과 버스정류장을 확인하세요.">
+  <meta property="og:image" content="https://example.com/assets/images/share-seoul.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="원불교 서울교당 오시는 길">
+  <meta property="og:url" content="https://example.com/?q=원불교서울교당">
+  <title>원불교 서울교당 오시는 길</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">본문으로 바로가기</a>
+  <main id="main" class="app-shell">
+    <section class="search-panel" aria-labelledby="pageTitle">
+      <div class="brand-mark" aria-hidden="true">●</div>
+      <p class="eyebrow">위치 안내</p>
+      <h1 id="pageTitle">어디를 방문하시나요?</h1>
+      <form id="searchForm" class="search-form" role="search">
+        <label class="sr-only" for="searchInput">방문할 장소</label>
+        <input id="searchInput" name="q" type="search" placeholder="예: 원불교 서울교당" autocomplete="off" required maxlength="80">
+        <button type="submit"><span aria-hidden="true">⌕</span> 검색</button>
+      </form>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="candidateSection" class="results-section" aria-labelledby="candidateTitle" hidden>
+      <h2 id="candidateTitle">검색 결과</h2>
+      <p class="section-help">방문할 장소를 선택하세요.</p>
+      <div id="candidateList" class="candidate-list"></div>
+    </section>
+
+    <section id="placeSection" class="results-section" aria-live="polite" hidden>
+      <article class="place-card">
+        <div class="place-heading">
+          <span class="mini-pin" aria-hidden="true"></span>
+          <div><p class="eyebrow">오시는 길</p><h2 id="placeName"></h2></div>
+        </div>
+        <p id="placeAddress" class="address"></p>
+        <dl class="coordinates">
+          <div><dt>위도</dt><dd id="latitude"></dd></div>
+          <div><dt>경도</dt><dd id="longitude"></dd></div>
+        </dl>
+        <div class="map-actions">
+          <a id="kakaoMapLink" class="map-button kakao" target="_blank" rel="noopener noreferrer">K 카카오맵</a>
+          <a id="naverMapLink" class="map-button naver" target="_blank" rel="noopener noreferrer">N 네이버지도</a>
+        </div>
+      </article>
+
+      <div id="transportCards" class="transport-grid"></div>
+
+      <div id="phoneWrap" class="contact-card" hidden>
+        <span>전화번호</span><a id="phoneLink"></a>
+      </div>
+
+      <button id="shareButton" class="share-button" type="button">↗ 위치 공유</button>
+      <p class="privacy-note">현재 위치를 요청하거나 저장하지 않습니다. 검색과 경로 조회는 카카오 공식 API를 사용합니다.</p>
+    </section>
+  </main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
