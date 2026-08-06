@@ -1,49 +1,155 @@
-(function(){
-  "use strict";
-  const $=(selector)=>document.querySelector(selector);
-  const state={query:"",selected:null};
-  let toastTimer;
+import { searchTemples, toYouTubeEmbedUrl } from "./lib/temple-search.js";
 
-  function setStatus(message,isError=false){const el=$("#status");el.textContent=message;el.classList.toggle("error",isError)}
-  function showToast(message){const el=$("#toast");el.textContent=message;el.classList.add("show");clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove("show"),2200)}
-  async function copyText(text){if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(text);return}const area=document.createElement("textarea");area.value=text;area.style.cssText="position:fixed;opacity:0";document.body.append(area);area.select();document.execCommand("copy");area.remove()}
-  async function request(params){
-    if(location.protocol==="file:"){
-      throw new Error("이 파일을 직접 열면 검색할 수 없습니다. Vercel에 배포하거나 vercel dev로 실행해 주세요.");
-    }
+const $ = (selector) => document.querySelector(selector);
+const elements = {
+  main: $("#main"), searchScreen: $("#searchScreen"), resultsScreen: $("#resultsScreen"), detailScreen: $("#detailScreen"),
+  searchForm: $("#searchForm"), searchInput: $("#searchInput"), suggestions: $("#templeSuggestions"), loadStatus: $("#loadStatus"),
+  resultList: $("#resultList"), resultCount: $("#resultCount"), emptyState: $("#emptyState"), resultsTitle: $("#resultsTitle"),
+  templeTitle: $("#templeTitle"), videoSection: $("#videoSection"), youtubeFrame: $("#youtubeFrame"), blogSection: $("#blogSection"),
+  blogLink: $("#blogLink"), addressText: $("#addressText"), phoneSection: $("#phoneSection"), phoneText: $("#phoneText"),
+  kakaoMapLink: $("#kakaoMapLink"), naverMapLink: $("#naverMapLink"), toast: $("#toast")
+};
+const state = { temples: [], query: "", selected: null };
+let toastTimer;
 
-    let response;
-    try{
-      response=await fetch(`/api/search?${new URLSearchParams(params)}`);
-    }catch{
-      throw new Error("검색 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.");
-    }
+function showScreen(target, focusTarget) {
+  [elements.searchScreen, elements.resultsScreen, elements.detailScreen].forEach((screen) => { screen.hidden = screen !== target; });
+  target.classList.remove("screen-enter");
+  requestAnimationFrame(() => target.classList.add("screen-enter"));
+  window.scrollTo({ top: 0, behavior: "auto" });
+  focusTarget?.focus({ preventScroll: true });
+}
 
-    const isJson=response.headers.get("content-type")?.includes("application/json");
-    const data=isJson?await response.json().catch(()=>({})):{};
-    if(!isJson){
-      throw new Error("검색 API 대신 로그인 또는 HTML 페이지가 반환되었습니다. Vercel 배포 보호 설정을 확인해 주세요.");
-    }
-    if(!response.ok){
-      throw new Error(data.error||"검색 서버에서 요청을 처리하지 못했습니다.");
-    }
-    return data;
+function routeParams() { return new URLSearchParams(window.location.hash.slice(1)); }
+
+function goTo(params = {}) {
+  const hash = new URLSearchParams(params).toString();
+  if (window.location.hash.slice(1) === hash) renderRoute();
+  else window.location.hash = hash;
+}
+
+function createResultCard(temple) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "temple-card";
+  button.setAttribute("aria-label", `${temple.name} 상세 정보 보기`);
+  const title = document.createElement("span");
+  title.className = "temple-card-title";
+  title.textContent = temple.name;
+  const address = document.createElement("span");
+  address.className = "temple-card-address";
+  address.textContent = temple.address;
+  button.append(title, address);
+  button.addEventListener("click", () => goTo({ temple: temple.id, q: state.query }));
+  return button;
+}
+
+function renderResults(query) {
+  state.query = query.trim();
+  elements.searchInput.value = state.query;
+  const matches = searchTemples(state.temples, state.query);
+  elements.resultList.replaceChildren(...matches.map(createResultCard));
+  elements.emptyState.hidden = matches.length !== 0;
+  elements.resultCount.textContent = `${matches.length}개의 검색 결과가 있습니다.`;
+  showScreen(elements.resultsScreen, elements.resultsTitle);
+}
+
+function renderDetail(temple, query) {
+  state.selected = temple;
+  state.query = query.trim();
+  elements.templeTitle.textContent = temple.name;
+  const embedUrl = toYouTubeEmbedUrl(temple.youtube);
+  elements.videoSection.hidden = !embedUrl;
+  elements.youtubeFrame.src = embedUrl;
+  elements.youtubeFrame.title = `${temple.name} 소개 영상`;
+  elements.blogSection.hidden = !temple.blog;
+  elements.blogLink.href = temple.blog || "";
+  elements.blogLink.querySelector("span").textContent = `${temple.name} 블로그 바로가기`;
+  elements.addressText.textContent = temple.address;
+  elements.phoneSection.hidden = !temple.phone;
+  elements.phoneText.textContent = temple.phone;
+  const mapQuery = encodeURIComponent(`${temple.name} ${temple.address}`);
+  elements.kakaoMapLink.href = temple.kakaoMapUrl || `https://map.kakao.com/link/search/${mapQuery}`;
+  elements.naverMapLink.href = temple.naverMapUrl || `https://map.naver.com/p/search/${mapQuery}`;
+  showScreen(elements.detailScreen, elements.templeTitle);
+}
+
+function renderRoute() {
+  if (!state.temples.length) return;
+  const params = routeParams();
+  const templeId = params.get("temple") || "";
+  const query = params.get("q") || "";
+  if (templeId) {
+    const temple = state.temples.find((item) => item.id === templeId);
+    if (temple) return renderDetail(temple, query);
   }
+  if (query) return renderResults(query);
+  state.query = "";
+  state.selected = null;
+  elements.youtubeFrame.src = "";
+  showScreen(elements.searchScreen);
+}
 
-  function createCandidate(place){const button=document.createElement("button");button.type="button";button.className="candidate";const name=document.createElement("strong");name.textContent=place.name;const address=document.createElement("span");address.textContent=place.address;button.append(name,address);button.addEventListener("click",()=>selectPlace(place));return button}
-  function renderCandidates(places){const list=$("#candidateList");list.replaceChildren(...places.map(createCandidate));$("#candidateSection").hidden=false;$("#placeSection").hidden=true}
-  function formatDistance(meters){return meters>=1000?`${(meters/1000).toFixed(1)}km`:`${meters}m`}
-  function formatTime(seconds){const minutes=Math.max(1,Math.round(seconds/60));return `약 ${minutes}분`}
-  function createTransportCard(type,item){if(!item)return null;const article=document.createElement("article");article.className="transport-card";const route=item.walkRoute;article.innerHTML=`<div class="transport-type"><span>${type}</span></div><h3></h3><div class="route-facts"></div>`;article.querySelector("h3").textContent=item.name;const facts=article.querySelector(".route-facts");if(route){facts.innerHTML=`<div><small>실제 도보거리</small><strong>${formatDistance(route.distance)}</strong></div><div><small>예상 도보시간</small><strong>${formatTime(route.time)}</strong></div>`}else{const note=document.createElement("p");note.className="route-note";note.textContent="도보 경로를 찾지 못했습니다.";article.append(note)}return article}
-  function renderPlace(data){const p=data.place;state.selected=p;$("#candidateSection").hidden=true;$("#placeName").textContent=p.name;$("#placeAddress").textContent=p.address;$("#kakaoMapLink").href=p.kakaoMapUrl;$("#naverMapLink").href=p.naverMapUrl;const cards=[createTransportCard("가장 가까운 지하철역",data.subway),createTransportCard("가장 가까운 버스정류장",data.busStop)].filter(Boolean);$("#transportCards").replaceChildren(...cards);const phoneWrap=$("#phoneWrap");if(p.phone){$("#phoneLink").textContent=p.phone;$("#phoneLink").href=`tel:${p.phone.replace(/[^+\d]/g,"")}`;phoneWrap.hidden=false}else phoneWrap.hidden=true;$("#placeSection").hidden=false;setStatus("");$("#placeSection").scrollIntoView({behavior:"smooth",block:"start"})}
+function showToast(message) {
+  elements.toast.textContent = message;
+  elements.toast.classList.add("is-visible");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => elements.toast.classList.remove("is-visible"), 2000);
+}
 
-  async function selectPlace(place){setStatus("교통 정보를 불러오는 중입니다...");try{const data=await request({q:state.query,placeId:place.id});renderPlace(data)}catch(error){setStatus(error.message,true)}}
-  async function search(query){const clean=query.trim();if(!clean)return;state.query=clean;setStatus("장소를 검색하는 중입니다...");$("#candidateSection").hidden=true;$("#placeSection").hidden=true;try{const data=await request({q:clean});if(!Array.isArray(data.places)){throw new Error("검색 서버 응답 형식이 올바르지 않습니다.")}if(!data.places.length){setStatus("검색 결과가 없습니다.",true);return}renderCandidates(data.places);setStatus(`${data.places.length}개의 결과를 찾았습니다.`);if(data.places.length===1)await selectPlace(data.places[0])}catch(error){setStatus(error.message,true)}}
-  $("#searchForm").addEventListener("submit",event=>{event.preventDefault();search($("#searchInput").value)});
-  $("#shareButton").addEventListener("click",async()=>{const compact=state.query.replace(/\s+/g,"");const url=new URL(location.href);url.search="";url.searchParams.set("q",compact);try{await copyText(url.href);showToast("공유 링크가 복사되었습니다.")}catch{showToast("링크를 복사하지 못했습니다.")}});
-  const initialQuery=new URLSearchParams(location.search).get("q");
-  if(initialQuery){$("#searchInput").value=initialQuery;search(initialQuery)}
-  else if(location.protocol==="file:"){
-    setStatus("현재 파일을 직접 열었습니다. 검색 기능은 Vercel 배포 주소 또는 vercel dev에서 사용할 수 있습니다.",true);
+async function copyText(value, successMessage) {
+  try {
+    if (navigator.clipboard && window.isSecureContext) await navigator.clipboard.writeText(value);
+    else {
+      const area = document.createElement("textarea");
+      area.value = value;
+      area.setAttribute("readonly", "");
+      area.style.cssText = "position:fixed;left:-9999px;opacity:0";
+      document.body.append(area);
+      area.select();
+      document.execCommand("copy");
+      area.remove();
+    }
+    showToast(successMessage);
+  } catch { showToast("복사하지 못했습니다."); }
+}
+
+function populateSuggestions() {
+  const values = new Set(state.temples.flatMap((temple) => [temple.name, ...temple.aliases]));
+  elements.suggestions.replaceChildren(...[...values].map((value) => {
+    const option = document.createElement("option");
+    option.value = value;
+    return option;
+  }));
+}
+
+async function loadTemples() {
+  try {
+    const response = await fetch(new URL("./data/temples.json", import.meta.url));
+    if (!response.ok) throw new Error("data request failed");
+    const temples = await response.json();
+    if (!Array.isArray(temples) || temples.length !== 44) throw new Error("invalid temple data");
+    state.temples = temples;
+    populateSuggestions();
+    elements.main.setAttribute("aria-busy", "false");
+    renderRoute();
+  } catch {
+    elements.main.setAttribute("aria-busy", "false");
+    elements.loadStatus.textContent = "교당 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
+    elements.loadStatus.classList.add("error");
+    elements.searchInput.disabled = true;
   }
-})();
+}
+
+elements.searchForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const query = elements.searchInput.value.trim();
+  if (query) goTo({ q: query });
+});
+$("#homeButton").addEventListener("click", () => goTo());
+$("#resultsBackButton").addEventListener("click", () => goTo());
+$("#detailBackButton").addEventListener("click", () => state.query ? goTo({ q: state.query }) : goTo());
+$("#copyAddressButton").addEventListener("click", () => { if (state.selected) copyText(state.selected.address, "주소가 복사되었습니다."); });
+$("#copyPhoneButton").addEventListener("click", () => { if (state.selected?.phone) copyText(state.selected.phone, "전화번호가 복사되었습니다."); });
+window.addEventListener("hashchange", renderRoute);
+loadTemples();
