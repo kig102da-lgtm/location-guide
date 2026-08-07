@@ -4,6 +4,7 @@ import { DISTRICTS, SUBWAY_LINES, matchVisibleTemples } from "../lib/navigation-
 
 test("uses the four approved districts", () => {
   assert.deepEqual(DISTRICTS.map(({ name }) => name), ["수원지구", "안양지구", "분당지구", "인천지구"]);
+  assert.ok(DISTRICTS[0].temples.includes("경기판교교당"));
 });
 
 test("line temple lists are deduplicated and match only production-visible temples", () => {
