@@ -38,6 +38,8 @@ test("detail content order and computed map searches are fixed", async () => {
   assert.deepEqual([...positions].sort((a, b) => a - b), positions);
   assert.match(app, /map\.kakao\.com\/link\/search\/\$\{mapQuery\}/);
   assert.match(app, /map\.naver\.com\/p\/search\/\$\{mapQuery\}/);
+  assert.match(app, /const mapQuery = encodeURIComponent\(temple\.address\);/);
+  assert.doesNotMatch(app, /encodeURIComponent\(`\$\{temple\.name\} \$\{temple\.address\}`\)/);
   assert.doesNotMatch(app, /kakaoMapUrl|naverMapUrl|naverPlaceUrl/);
   assert.match(styles, /\.blog-button \{[^}]*background: var\(--orange\);[^}]*color: #fff;/);
 });

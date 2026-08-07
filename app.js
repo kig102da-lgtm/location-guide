@@ -93,7 +93,7 @@ function renderDetail(temple, query) {
   elements.phoneSection.hidden = !temple.phone;
   elements.phoneText.textContent = temple.phone;
   elements.addressText.textContent = temple.address;
-  const mapQuery = encodeURIComponent(`${temple.name} ${temple.address}`);
+  const mapQuery = encodeURIComponent(temple.address);
   elements.kakaoMapLink.href = `https://map.kakao.com/link/search/${mapQuery}`;
   elements.naverMapLink.href = `https://map.naver.com/p/search/${mapQuery}`;
   showScreen(elements.detailScreen, elements.templeTitle);
