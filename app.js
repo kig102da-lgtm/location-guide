@@ -125,10 +125,18 @@ function populateSuggestions() {
 
 async function loadTemples() {
   try {
-    const response = await fetch(new URL("./data/temples.json", import.meta.url));
-    if (!response.ok) throw new Error("data request failed");
-    const temples = await response.json();
-    if (!Array.isArray(temples) || temples.length !== 44) throw new Error("invalid temple data");
+    let temples;
+    try {
+      const response = await fetch("/api/temples", { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("Google Sheets API request failed");
+      temples = await response.json();
+    } catch {
+      const fallbackResponse = await fetch(new URL("./data/temples.json", import.meta.url));
+      if (!fallbackResponse.ok) throw new Error("fallback data request failed");
+      temples = await fallbackResponse.json();
+    }
+    if (!Array.isArray(temples) || !temples.length) throw new Error("invalid temple data");
+    if (new Set(temples.map(({ id }) => id)).size !== temples.length) throw new Error("duplicate temple ids");
     state.temples = temples;
     populateSuggestions();
     elements.main.setAttribute("aria-busy", "false");
