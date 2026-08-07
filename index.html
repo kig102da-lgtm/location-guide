@@ -47,6 +47,14 @@
             <button id="retryButton" class="retry-button" type="button" hidden>다시 시도</button>
           </div>
         </div>
+        <section class="browse-section" aria-labelledby="districtTitle">
+          <h2 id="districtTitle">지구별 교당</h2>
+          <div id="districtList" class="district-list"></div>
+        </section>
+        <section class="browse-section" aria-labelledby="lineTitle">
+          <h2 id="lineTitle">노선별 교당</h2>
+          <div id="lineList" class="line-list"></div>
+        </section>
       </section>
 
       <section id="resultsScreen" class="screen" aria-labelledby="resultsTitle" hidden>
@@ -91,6 +99,15 @@
         </div>
       </section>
     </main>
+    <div id="lineModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="lineModalTitle" hidden>
+      <section class="line-modal">
+        <header class="modal-heading">
+          <h2 id="lineModalTitle" tabindex="-1"></h2>
+          <button id="lineModalClose" class="modal-close" type="button" aria-label="노선별 교당 목록 닫기">×</button>
+        </header>
+        <div id="lineTempleList" class="modal-temple-list"></div>
+      </section>
+    </div>
     <div id="toast" class="toast" role="status" aria-live="polite" aria-atomic="true"></div>
   </body>
 </html>

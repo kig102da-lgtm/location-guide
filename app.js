@@ -1,4 +1,5 @@
 import { searchTemples, toYouTubeEmbedUrl } from "./lib/temple-search.js";
+import { DISTRICTS, SUBWAY_LINES, matchVisibleTemples } from "./lib/navigation-data.js";
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
@@ -7,10 +8,13 @@ const elements = {
   resultList: $("#resultList"), resultCount: $("#resultCount"), emptyState: $("#emptyState"), resultsTitle: $("#resultsTitle"),
   templeTitle: $("#templeTitle"), videoSection: $("#videoSection"), youtubeFrame: $("#youtubeFrame"), blogSection: $("#blogSection"),
   blogLink: $("#blogLink"), addressText: $("#addressText"), phoneSection: $("#phoneSection"), phoneText: $("#phoneText"),
-  kakaoMapLink: $("#kakaoMapLink"), naverMapLink: $("#naverMapLink"), toast: $("#toast")
+  kakaoMapLink: $("#kakaoMapLink"), naverMapLink: $("#naverMapLink"), toast: $("#toast"),
+  districtList: $("#districtList"), lineList: $("#lineList"), lineModal: $("#lineModal"), lineModalTitle: $("#lineModalTitle"),
+  lineTempleList: $("#lineTempleList"), lineModalClose: $("#lineModalClose")
 };
 const state = { temples: [], query: "", selected: null, loading: false };
 let toastTimer;
+let modalTrigger;
 
 function showScreen(target, focusTarget) {
   [elements.searchScreen, elements.resultsScreen, elements.detailScreen].forEach((screen) => { screen.hidden = screen !== target; });
@@ -41,6 +45,62 @@ function createResultCard(temple) {
   button.append(title, address);
   button.addEventListener("click", () => goTo({ temple: temple.id, q: state.query }));
   return button;
+}
+
+function createTempleLink(temple, className = "temple-link") {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = className;
+  button.textContent = temple.name;
+  button.setAttribute("aria-label", `${temple.name} 상세 정보 보기`);
+  button.addEventListener("click", () => {
+    closeLineModal(false);
+    goTo({ temple: temple.id });
+  });
+  return button;
+}
+
+function renderBrowseNavigation() {
+  elements.districtList.replaceChildren(...DISTRICTS.map((district) => {
+    const section = document.createElement("section");
+    section.className = "district-card";
+    const title = document.createElement("h3");
+    title.textContent = district.name;
+    const list = document.createElement("div");
+    list.className = "district-temples";
+    list.replaceChildren(...matchVisibleTemples(district.temples, state.temples).map((temple) => createTempleLink(temple)));
+    section.append(title, list);
+    return section;
+  }));
+
+  elements.lineList.replaceChildren(...SUBWAY_LINES.map((line) => {
+    const temples = matchVisibleTemples(line.temples, state.temples);
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "line-button";
+    button.innerHTML = `<span class="line-dot" aria-hidden="true"></span><span>${line.name}</span><span class="line-count">${temples.length}곳</span>`;
+    button.querySelector(".line-dot").style.background = line.color;
+    button.disabled = temples.length === 0;
+    button.addEventListener("click", () => openLineModal(line, temples, button));
+    return button;
+  }));
+}
+
+function openLineModal(line, temples, trigger) {
+  modalTrigger = trigger;
+  elements.lineModalTitle.textContent = line.name;
+  elements.lineTempleList.replaceChildren(...temples.map((temple) => createTempleLink(temple, "modal-temple-link")));
+  elements.lineModal.hidden = false;
+  document.body.classList.add("modal-open");
+  elements.lineModalClose.focus();
+}
+
+function closeLineModal(restoreFocus = true) {
+  if (elements.lineModal.hidden) return;
+  elements.lineModal.hidden = true;
+  document.body.classList.remove("modal-open");
+  if (restoreFocus) modalTrigger?.focus();
+  modalTrigger = null;
 }
 
 function renderResults(query) {
@@ -138,6 +198,7 @@ async function loadTemples() {
     const response = await fetch("/api/temples", { headers: { Accept: "application/json" }, cache: "no-store" });
     if (!response.ok) throw new Error(`Google Sheets API request failed: ${response.status}`);
     state.temples = validateTemples(await response.json());
+    renderBrowseNavigation();
     setLoadingState("ready");
     renderRoute();
   } catch (error) {
@@ -158,5 +219,17 @@ $("#detailBackButton").addEventListener("click", () => state.query ? goTo({ q: s
 $("#copyAddressButton").addEventListener("click", () => { if (state.selected) copyText(state.selected.address, "주소가 복사되었습니다."); });
 $("#copyPhoneButton").addEventListener("click", () => { if (state.selected?.phone) copyText(state.selected.phone, "전화번호가 복사되었습니다."); });
 elements.retryButton.addEventListener("click", loadTemples);
+elements.lineModalClose.addEventListener("click", () => closeLineModal());
+elements.lineModal.addEventListener("click", (event) => { if (event.target === elements.lineModal) closeLineModal(); });
+window.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeLineModal();
+  if (event.key === "Tab" && !elements.lineModal.hidden) {
+    const focusable = [...elements.lineModal.querySelectorAll("button:not(:disabled)")];
+    const first = focusable[0];
+    const last = focusable.at(-1);
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+});
 window.addEventListener("hashchange", renderRoute);
 loadTemples();
