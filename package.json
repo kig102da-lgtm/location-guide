@@ -1,5 +1,5 @@
 {
-  "name": "gyeongin-temple-guide",
+  "name": "wongi-location",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -8,6 +8,6 @@
   },
   "scripts": {
     "test": "node --test",
-    "validate": "node --check app.js && node --test"
+    "validate": "node --check app.js && node --check api/temples.js && node --test"
   }
 }

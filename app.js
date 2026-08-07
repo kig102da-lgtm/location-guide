@@ -3,13 +3,13 @@ import { searchTemples, toYouTubeEmbedUrl } from "./lib/temple-search.js";
 const $ = (selector) => document.querySelector(selector);
 const elements = {
   main: $("#main"), searchScreen: $("#searchScreen"), resultsScreen: $("#resultsScreen"), detailScreen: $("#detailScreen"),
-  searchForm: $("#searchForm"), searchInput: $("#searchInput"), suggestions: $("#templeSuggestions"), loadStatus: $("#loadStatus"),
+  searchForm: $("#searchForm"), searchInput: $("#searchInput"), searchButton: $("#searchButton"), loadStatus: $("#loadStatus"), retryButton: $("#retryButton"),
   resultList: $("#resultList"), resultCount: $("#resultCount"), emptyState: $("#emptyState"), resultsTitle: $("#resultsTitle"),
   templeTitle: $("#templeTitle"), videoSection: $("#videoSection"), youtubeFrame: $("#youtubeFrame"), blogSection: $("#blogSection"),
   blogLink: $("#blogLink"), addressText: $("#addressText"), phoneSection: $("#phoneSection"), phoneText: $("#phoneText"),
   kakaoMapLink: $("#kakaoMapLink"), naverMapLink: $("#naverMapLink"), toast: $("#toast")
 };
-const state = { temples: [], query: "", selected: null };
+const state = { temples: [], query: "", selected: null, loading: false };
 let toastTimer;
 
 function showScreen(target, focusTarget) {
@@ -21,7 +21,6 @@ function showScreen(target, focusTarget) {
 }
 
 function routeParams() { return new URLSearchParams(window.location.hash.slice(1)); }
-
 function goTo(params = {}) {
   const hash = new URLSearchParams(params).toString();
   if (window.location.hash.slice(1) === hash) renderRoute();
@@ -65,12 +64,12 @@ function renderDetail(temple, query) {
   elements.blogSection.hidden = !temple.blog;
   elements.blogLink.href = temple.blog || "";
   elements.blogLink.querySelector("span").textContent = `${temple.name} 블로그 바로가기`;
-  elements.addressText.textContent = temple.address;
   elements.phoneSection.hidden = !temple.phone;
   elements.phoneText.textContent = temple.phone;
+  elements.addressText.textContent = temple.address;
   const mapQuery = encodeURIComponent(`${temple.name} ${temple.address}`);
-  elements.kakaoMapLink.href = temple.kakaoMapUrl || `https://map.kakao.com/link/search/${mapQuery}`;
-  elements.naverMapLink.href = temple.naverMapUrl || `https://map.naver.com/p/search/${mapQuery}`;
+  elements.kakaoMapLink.href = `https://map.kakao.com/link/search/${mapQuery}`;
+  elements.naverMapLink.href = `https://map.naver.com/p/search/${mapQuery}`;
   showScreen(elements.detailScreen, elements.templeTitle);
 }
 
@@ -114,38 +113,36 @@ async function copyText(value, successMessage) {
   } catch { showToast("복사하지 못했습니다."); }
 }
 
-function populateSuggestions() {
-  const values = new Set(state.temples.flatMap((temple) => [temple.name, ...temple.aliases]));
-  elements.suggestions.replaceChildren(...[...values].map((value) => {
-    const option = document.createElement("option");
-    option.value = value;
-    return option;
-  }));
+function setLoadingState(mode) {
+  const loading = mode === "loading";
+  state.loading = loading;
+  elements.main.setAttribute("aria-busy", String(loading));
+  elements.searchInput.disabled = mode !== "ready";
+  elements.searchButton.disabled = mode !== "ready";
+  elements.retryButton.hidden = mode !== "error";
+  elements.loadStatus.classList.toggle("error", mode === "error");
+  elements.loadStatus.textContent = mode === "loading" ? "교당 정보를 불러오는 중..." : mode === "error" ? "교당 정보를 불러오지 못했습니다." : "";
+}
+
+function validateTemples(temples) {
+  if (!Array.isArray(temples) || !temples.length) throw new Error("invalid temple data");
+  if (new Set(temples.map(({ id }) => id)).size !== temples.length) throw new Error("duplicate temple ids");
+  if (temples.some(({ id, name, address }) => !id || !name || !address)) throw new Error("missing required temple data");
+  return temples;
 }
 
 async function loadTemples() {
+  if (state.loading) return;
+  setLoadingState("loading");
   try {
-    let temples;
-    try {
-      const response = await fetch("/api/temples", { headers: { Accept: "application/json" } });
-      if (!response.ok) throw new Error("Google Sheets API request failed");
-      temples = await response.json();
-    } catch {
-      const fallbackResponse = await fetch(new URL("./data/temples.json", import.meta.url));
-      if (!fallbackResponse.ok) throw new Error("fallback data request failed");
-      temples = await fallbackResponse.json();
-    }
-    if (!Array.isArray(temples) || !temples.length) throw new Error("invalid temple data");
-    if (new Set(temples.map(({ id }) => id)).size !== temples.length) throw new Error("duplicate temple ids");
-    state.temples = temples;
-    populateSuggestions();
-    elements.main.setAttribute("aria-busy", "false");
+    const response = await fetch("/api/temples", { headers: { Accept: "application/json" }, cache: "no-store" });
+    if (!response.ok) throw new Error(`Google Sheets API request failed: ${response.status}`);
+    state.temples = validateTemples(await response.json());
+    setLoadingState("ready");
     renderRoute();
-  } catch {
-    elements.main.setAttribute("aria-busy", "false");
-    elements.loadStatus.textContent = "교당 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.";
-    elements.loadStatus.classList.add("error");
-    elements.searchInput.disabled = true;
+  } catch (error) {
+    console.error("Unable to load temple data", error);
+    setLoadingState("error");
   }
 }
 
@@ -154,10 +151,12 @@ elements.searchForm.addEventListener("submit", (event) => {
   const query = elements.searchInput.value.trim();
   if (query) goTo({ q: query });
 });
-$("#homeButton").addEventListener("click", () => goTo());
+$("#headerHomeButton").addEventListener("click", () => goTo());
+$("#detailHomeButton").addEventListener("click", () => goTo());
 $("#resultsBackButton").addEventListener("click", () => goTo());
 $("#detailBackButton").addEventListener("click", () => state.query ? goTo({ q: state.query }) : goTo());
 $("#copyAddressButton").addEventListener("click", () => { if (state.selected) copyText(state.selected.address, "주소가 복사되었습니다."); });
 $("#copyPhoneButton").addEventListener("click", () => { if (state.selected?.phone) copyText(state.selected.phone, "전화번호가 복사되었습니다."); });
+elements.retryButton.addEventListener("click", loadTemples);
 window.addEventListener("hashchange", renderRoute);
 loadTemples();

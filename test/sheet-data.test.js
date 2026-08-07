@@ -24,5 +24,8 @@ test("maps operation settings and hides OFF rows", () => {
   assert.equal(temples[0].youtube, "");
   assert.equal(temples[0].blog, "https://blog.test");
   assert.equal(temples[0].phone, "");
-  assert.equal(temples[0].notes, "관리, 메모");
+  assert.equal(temples[0].updatedAt, "2026-08-07");
+  assert.equal("naverPlaceUrl" in temples[0], false);
+  assert.equal("naverMapUrl" in temples[0], false);
+  assert.equal("kakaoMapUrl" in temples[0], false);
 });

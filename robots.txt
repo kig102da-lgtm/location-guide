@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://wongi-location.vercel.app/sitemap.xml

@@ -1,28 +1,26 @@
 # 원불교 경기인천교구 교당 안내
 
-경기인천교구 일반 교당 44개를 검색하고 주소·전화번호·블로그·지도 링크를 확인하는 정적 웹앱입니다.
+경기인천교구 교당을 이름으로 검색하고 주소·전화·영상·블로그·지도 정보를 확인하는 모바일 우선 웹앱입니다.
 
-## 구성
+## 운영 데이터
 
-- 검색 화면
-- 교당명과 주소만 표시하는 검색 결과
-- 영상·블로그·주소·전화·지도 버튼을 조건부로 표시하는 교당 상세 화면
+운영자는 [Google Sheets 운영표](https://docs.google.com/spreadsheets/d/1xTMxfW0mc4F3M4LS22GwUWIsb77wGTY9IJwsH2qcTj0/edit?gid=6288047#gid=6288047)만 수정합니다. 앱은 `/api/temples`에서 공개 CSV를 읽어 사용하며, 저장소의 JSON 파일을 운영 데이터로 사용하지 않습니다.
 
-운영 데이터는 Google Sheets의 `temples` 시트에서 읽습니다. 운영자는 `경기인천교구_44개교당_운영표_v2.0`에서 내용을 수정하고, 앱은 `/api/temples`를 통해 공개 CSV를 안전하게 변환해 사용합니다.
-
-- `노출 여부`: `ON`인 교당만 앱에 표시
-- `영상 사용`, `블로그 사용`, `전화 표시`: 각 정보의 표시 여부 제어
-- 변경 내용은 최대 약 5분의 캐시 후 반영
-- Google Sheets를 일시적으로 읽지 못하면 `data/temples.json`을 예비 데이터로 사용
+- `노출 여부`: `ON`인 교당만 검색 가능
+- `영상 사용`: `ON`이고 URL이 있을 때만 YouTube 표시
+- `블로그 사용`: `ON`이고 URL이 있을 때만 블로그 표시
+- `전화 표시`: `ON`이고 번호가 있을 때만 전화 표시
+- 빈 정보는 영역 자체를 표시하지 않음
+- 변경 내용은 최대 5분의 캐시 뒤 반영
 
 ## 검증
 
-Node.js 20 이상에서 다음 명령을 실행합니다.
+Node.js 20 이상에서 실행합니다.
 
 ```text
-npm test
+npm run validate
 ```
 
 ## 배포
 
-별도 환경 변수 없이 Vercel에 배포됩니다. `api/temples.js`는 Google Sheets를 읽는 서버 함수이며, 기존 Vercel 프로젝트가 GitHub `main` 브랜치와 연결되어 있으면 푸시 후 자동으로 새 배포가 생성됩니다.
+Vercel 프로젝트 이름은 `wongi-location`, 운영 URL은 <https://wongi-location.vercel.app>입니다. GitHub 저장소 `kig102da-lgtm/location-guide`의 `main` 브랜치를 연결합니다.

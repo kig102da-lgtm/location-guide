@@ -8,14 +8,13 @@ export default async function handler(request, response) {
 
   try {
     const sheetResponse = await fetch(SHEET_CSV_URL, {
-      headers: { "User-Agent": "gyeongin-temple-guide/2.0" },
+      headers: { "User-Agent": "wongi-location/1.0" },
+      signal: AbortSignal.timeout(10000),
     });
     if (!sheetResponse.ok) throw new Error(`Google Sheets returned ${sheetResponse.status}`);
-
     const temples = sheetCsvToTemples(await sheetResponse.text());
     if (!temples.length) throw new Error("Google Sheets returned no visible temples");
-
-    response.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=86400");
+    response.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=3600");
     return response.status(200).json(temples);
   } catch (error) {
     console.error("Unable to load temple data", error);
