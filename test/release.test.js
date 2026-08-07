@@ -31,7 +31,7 @@ test("release UI excludes autocomplete, suggestions, favorites, and bottom navig
 });
 
 test("detail content order and computed map searches are fixed", async () => {
-  const [html, app] = await Promise.all([read("index.html"), read("app.js")]);
+  const [html, app, styles] = await Promise.all([read("index.html"), read("app.js"), read("styles.css")]);
   const ids = ["videoSection", "blogSection", "phoneSection", "addressLabel", "kakaoMapLink", "naverMapLink", "detailHomeButton"];
   const positions = ids.map((id) => html.indexOf(`id="${id}"`));
   assert.ok(positions.every((position) => position >= 0));
@@ -39,6 +39,7 @@ test("detail content order and computed map searches are fixed", async () => {
   assert.match(app, /map\.kakao\.com\/link\/search\/\$\{mapQuery\}/);
   assert.match(app, /map\.naver\.com\/p\/search\/\$\{mapQuery\}/);
   assert.doesNotMatch(app, /kakaoMapUrl|naverMapUrl|naverPlaceUrl/);
+  assert.match(styles, /\.blog-button \{[^}]*background: var\(--orange\);[^}]*color: #fff;/);
 });
 
 test("Google Sheets is the only production temple source", async () => {
