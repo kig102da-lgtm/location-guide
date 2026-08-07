@@ -33,9 +33,9 @@
 - [x] README, manifest, robots, sitemap 수정
 - [x] 저장소에서 기존 `location-guide-eight` URL 제거
 - [x] 192px·512px PWA 아이콘과 manifest 연결
-- [ ] 새 Vercel 프로젝트 이름이 정확히 `wongi-location`
-- [ ] GitHub `main` 연결 및 운영 배포
-- [ ] `https://wongi-location.vercel.app` 실서비스 응답 확인
+- [x] 새 Vercel 프로젝트 이름이 정확히 `wongi-location`
+- [x] GitHub `main` 연결 및 운영 배포
+- [x] `https://wongi-location.vercel.app` 실서비스 응답 확인
 
 ## QA
 
@@ -44,6 +44,6 @@
 - [x] 44개 교당 필수 ID·이름·주소 및 중복 ID 검사
 - [x] 영상·블로그·전화 ON/OFF와 빈 값 규칙 검사
 - [x] 지도 링크가 교당명+주소 검색으로 생성되는지 검사
-- [ ] 배포 URL에서 PC Chrome 확인
-- [ ] 배포 URL에서 모바일 크기 확인
-- [ ] 배포 URL에서 복사·외부 링크 상호작용 확인
+- [x] 배포 URL에서 PC Chromium 확인
+- [x] 배포 URL에서 390×844 모바일 크기 확인
+- [x] 배포 URL에서 복사·외부 링크 상호작용 확인
