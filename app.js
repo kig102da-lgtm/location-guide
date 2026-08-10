@@ -1,5 +1,5 @@
 import { searchTemples, toYouTubeEmbedUrl } from "./lib/temple-search.js";
-import { DISTRICTS, matchVisibleTemples } from "./lib/navigation-data.js";
+import { groupByDistrict } from "./lib/navigation-data.js";
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
@@ -55,14 +55,14 @@ function createTempleLink(temple, className = "temple-link") {
 }
 
 function renderBrowseNavigation() {
-  elements.districtList.replaceChildren(...DISTRICTS.map((district) => {
+  elements.districtList.replaceChildren(...groupByDistrict(state.temples).map((district) => {
     const section = document.createElement("section");
     section.className = "district-card";
     const title = document.createElement("h3");
     title.textContent = district.name;
     const list = document.createElement("div");
     list.className = "district-temples";
-    list.replaceChildren(...matchVisibleTemples(district.temples, state.temples).map((temple) => createTempleLink(temple)));
+    list.replaceChildren(...district.temples.map((temple) => createTempleLink(temple)));
     section.append(title, list);
     return section;
   }));
@@ -94,7 +94,9 @@ function renderDetail(temple, query) {
   elements.phoneText.textContent = temple.phone;
   elements.addressText.textContent = temple.address;
   const mapQuery = encodeURIComponent(temple.address);
-  elements.kakaoMapLink.href = `https://map.kakao.com/link/search/${mapQuery}`;
+  elements.kakaoMapLink.href = temple.lat && temple.lng
+    ? `https://map.kakao.com/link/map/${encodeURIComponent(temple.name)},${temple.lat},${temple.lng}`
+    : `https://map.kakao.com/link/search/${mapQuery}`;
   elements.naverMapLink.href = `https://map.naver.com/p/search/${mapQuery}`;
   showScreen(elements.detailScreen, elements.templeTitle);
 }
