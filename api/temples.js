@@ -1,4 +1,5 @@
 import { SHEET_CSV_URL, sheetCsvToTemples } from "../lib/sheet-data.js";
+import { SNAPSHOT_GENERATED_AT, TEMPLE_SNAPSHOT } from "../lib/temple-snapshot.js";
 
 export default async function handler(request, response) {
   if (request.method !== "GET") {
@@ -19,6 +20,11 @@ export default async function handler(request, response) {
   } catch (error) {
     console.error("Unable to load temple data", error);
     response.setHeader("Cache-Control", "no-store");
+    if (TEMPLE_SNAPSHOT.length) {
+      response.setHeader("X-Data-Source", "snapshot");
+      response.setHeader("X-Snapshot-Generated-At", SNAPSHOT_GENERATED_AT);
+      return response.status(200).json(TEMPLE_SNAPSHOT);
+    }
     return response.status(502).json({ error: "Unable to load temple data" });
   }
 }
