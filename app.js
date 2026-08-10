@@ -145,11 +145,11 @@ function setLoadingState(mode) {
   const loading = mode === "loading";
   state.loading = loading;
   elements.main.setAttribute("aria-busy", String(loading));
-  elements.searchInput.disabled = mode !== "ready";
-  elements.searchButton.disabled = mode !== "ready";
+  elements.searchInput.disabled = mode === "loading" || mode === "error";
+  elements.searchButton.disabled = mode === "loading" || mode === "error";
   elements.retryButton.hidden = mode !== "error";
   elements.loadStatus.classList.toggle("error", mode === "error");
-  elements.loadStatus.textContent = mode === "loading" ? "교당 정보를 불러오는 중..." : mode === "error" ? "교당 정보를 불러오지 못했습니다." : "";
+  elements.loadStatus.textContent = mode === "loading" ? "교당 정보를 불러오는 중..." : mode === "error" ? "교당 정보를 불러오지 못했습니다." : mode === "stale" ? "정보가 최신이 아닐 수 있습니다." : "";
 }
 
 function validateTemples(temples) {
@@ -165,9 +165,10 @@ async function loadTemples() {
   try {
     const response = await fetch("/api/temples", { headers: { Accept: "application/json" }, cache: "no-store" });
     if (!response.ok) throw new Error(`Google Sheets API request failed: ${response.status}`);
+    const fromSnapshot = response.headers.get("X-Data-Source") === "snapshot";
     state.temples = validateTemples(await response.json());
     renderBrowseNavigation();
-    setLoadingState("ready");
+    setLoadingState(fromSnapshot ? "stale" : "ready");
     renderRoute();
   } catch (error) {
     console.error("Unable to load temple data", error);
