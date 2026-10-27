@@ -15,5 +15,5 @@
       ]
     }
   ],
-  "rewrites": [{ "source": "/qr", "destination": "/index.html" }]
+  "rewrites": [{ "source": "/qr", "destination": "/" }]
 }
