@@ -17,13 +17,13 @@ test("release URL and metadata use the new production origin", async () => {
   assert.match(html, /property="og:image" content="https:\/\/wongi-location\.vercel\.app\/og-image\.png"/);
 });
 
-test("release UI excludes autocomplete, suggestions, favorites, and bottom navigation", async () => {
+test("release UI has no search, suggestions, favorites, or bottom navigation", async () => {
   const [html, app, styles] = await Promise.all([read("index.html"), read("app.js"), read("styles.css")]);
   assert.match(html, /반갑습니다\. 경기인천교구 교당을 방문해 보세요/);
   assert.match(html, /열린 교화, 친절한 교당/);
-  assert.match(html, /placeholder="교당명을 입력하세요"/);
-  assert.match(html, /autocomplete="off"/);
-  assert.doesNotMatch(html + app, /datalist|templeSuggestions|favorite|즐겨찾기|bottom-nav/i);
+  assert.match(html, /지역별 교당/);
+  assert.doesNotMatch(html + app, /searchForm|searchInput|resultsScreen|datalist|templeSuggestions|favorite|즐겨찾기|bottom-nav/i);
+  assert.match(styles, /font-family: "Cute Font"/);
   assert.doesNotMatch(html + app + styles, /Pretendard/i);
   assert.match(styles, /font-family: "KoPubWorld Dotum"/);
   assert.match(styles, /background-size: 80%/);
@@ -32,7 +32,7 @@ test("release UI excludes autocomplete, suggestions, favorites, and bottom navig
 
 test("detail content order and computed map searches are fixed", async () => {
   const [html, app, styles] = await Promise.all([read("index.html"), read("app.js"), read("styles.css")]);
-  const ids = ["videoSection", "blogSection", "phoneSection", "addressLabel", "kakaoMapLink", "naverMapLink", "detailHomeButton"];
+  const ids = ["addressLabel", "kakaoMapLink", "naverMapLink", "phoneSection", "blogSection", "videoSection", "detailHomeButton"];
   const positions = ids.map((id) => html.indexOf(`id="${id}"`));
   assert.ok(positions.every((position) => position >= 0));
   assert.deepEqual([...positions].sort((a, b) => a - b), positions);

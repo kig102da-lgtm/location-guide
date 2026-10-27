@@ -17,6 +17,9 @@
     <link rel="icon" href="/icon-192.png" type="image/png">
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-kopubworld@1.0.3/dotum.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cute+Font&display=swap">
     <link rel="stylesheet" href="/styles.css">
     <title>원불교 경기인천교구 교당 안내</title>
     <script type="module" src="/app.js"></script>
@@ -30,59 +33,27 @@
     </header>
 
     <main id="main" class="app-shell" aria-busy="true">
-      <section id="searchScreen" class="screen search-screen" aria-labelledby="searchTitle">
+      <section id="homeScreen" class="screen home-screen" aria-labelledby="homeTitle">
         <div class="hero-card">
+          <h1 id="homeTitle">열린 교화, 친절한 교당</h1>
           <p class="welcome">반갑습니다. 경기인천교구 교당을 방문해 보세요</p>
-          <h1 id="searchTitle">열린 교화, 친절한 교당</h1>
-          <form id="searchForm" class="search-form" role="search">
-            <label class="sr-only" for="searchInput">교당명 검색</label>
-            <div class="search-field">
-              <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16.5 16.5 4 4"></path></svg>
-              <input id="searchInput" name="q" type="search" placeholder="교당명을 입력하세요" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="60" required disabled>
-            </div>
-            <button id="searchButton" class="primary-button" type="submit" disabled>검색</button>
-          </form>
           <div class="load-panel" aria-live="polite">
             <p id="loadStatus" class="status" role="status">교당 정보를 불러오는 중...</p>
             <button id="retryButton" class="retry-button" type="button" hidden>다시 시도</button>
           </div>
         </div>
-        <section class="browse-section" aria-labelledby="districtTitle">
-          <h2 id="districtTitle">지구별 교당</h2>
-          <div id="districtList" class="district-list"></div>
+        <section class="browse-section" aria-labelledby="regionTitle">
+          <h2 id="regionTitle">지역별 교당</h2>
+          <div id="provinceTabs" class="province-tabs" role="tablist" aria-label="시·도 선택"></div>
+          <div id="regionList" class="region-list" role="tabpanel"></div>
         </section>
-      </section>
-
-      <section id="resultsScreen" class="screen" aria-labelledby="resultsTitle" hidden>
-        <div class="screen-heading">
-          <button id="resultsBackButton" class="back-button" type="button" aria-label="검색 화면으로 돌아가기">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>다시 검색
-          </button>
-          <h1 id="resultsTitle" tabindex="-1">검색 결과</h1>
-          <p id="resultCount" class="sr-only" aria-live="polite"></p>
-        </div>
-        <div id="resultList" class="result-list"></div>
-        <p id="emptyState" class="empty-state" role="status" hidden>검색 결과가 없습니다.</p>
       </section>
 
       <section id="detailScreen" class="screen" aria-labelledby="templeTitle" hidden>
         <div class="screen-heading">
-          <button id="detailBackButton" class="back-button" type="button">
-            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"></path></svg>검색 결과
-          </button>
           <h1 id="templeTitle" tabindex="-1"></h1>
         </div>
         <div class="detail-stack">
-          <section id="videoSection" class="video-section" aria-label="교당 소개 영상" hidden>
-            <div class="video-frame"><iframe id="youtubeFrame" title="교당 소개 영상" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
-          </section>
-          <section id="blogSection" hidden>
-            <a id="blogLink" class="blog-button" target="_blank" rel="noopener noreferrer"><span></span></a>
-          </section>
-          <section id="phoneSection" class="info-card" aria-labelledby="phoneLabel" hidden>
-            <div class="info-content"><h2 id="phoneLabel">전화</h2><p id="phoneText"></p></div>
-            <button id="copyPhoneButton" class="copy-button" type="button">복사</button>
-          </section>
           <section class="info-card" aria-labelledby="addressLabel">
             <div class="info-content"><h2 id="addressLabel">주소</h2><p id="addressText"></p></div>
             <button id="copyAddressButton" class="copy-button" type="button">복사</button>
@@ -91,7 +62,17 @@
             <a id="kakaoMapLink" class="map-button kakao-button" target="_blank" rel="noopener noreferrer">카카오맵</a>
             <a id="naverMapLink" class="map-button naver-button" target="_blank" rel="noopener noreferrer">네이버지도</a>
           </nav>
-          <button id="detailHomeButton" class="home-button" type="button">처음으로 돌아가기</button>
+          <section id="phoneSection" class="info-card" aria-labelledby="phoneLabel" hidden>
+            <div class="info-content"><h2 id="phoneLabel">전화</h2><p id="phoneText"></p></div>
+            <button id="copyPhoneButton" class="copy-button" type="button">복사</button>
+          </section>
+          <section id="blogSection" hidden>
+            <a id="blogLink" class="blog-button" target="_blank" rel="noopener noreferrer"><span></span></a>
+          </section>
+          <section id="videoSection" class="video-section" aria-label="교당 소개 영상" hidden>
+            <div class="video-frame"><iframe id="youtubeFrame" title="교당 소개 영상" loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe></div>
+          </section>
+          <button id="detailHomeButton" class="home-link" type="button">처음으로 돌아가기</button>
         </div>
       </section>
     </main>

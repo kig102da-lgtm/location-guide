@@ -1,20 +1,19 @@
-import { searchTemples, toYouTubeEmbedUrl } from "./lib/temple-search.js";
-import { groupByDistrict } from "./lib/navigation-data.js";
+import { toYouTubeEmbedUrl } from "./lib/temple-search.js";
+import { groupByRegion, templeLabel } from "./lib/navigation-data.js";
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
-  main: $("#main"), searchScreen: $("#searchScreen"), resultsScreen: $("#resultsScreen"), detailScreen: $("#detailScreen"),
-  searchForm: $("#searchForm"), searchInput: $("#searchInput"), searchButton: $("#searchButton"), loadStatus: $("#loadStatus"), retryButton: $("#retryButton"),
-  resultList: $("#resultList"), resultCount: $("#resultCount"), emptyState: $("#emptyState"), resultsTitle: $("#resultsTitle"),
+  main: $("#main"), homeScreen: $("#homeScreen"), detailScreen: $("#detailScreen"),
+  loadStatus: $("#loadStatus"), retryButton: $("#retryButton"), provinceTabs: $("#provinceTabs"), regionList: $("#regionList"),
   templeTitle: $("#templeTitle"), videoSection: $("#videoSection"), youtubeFrame: $("#youtubeFrame"), blogSection: $("#blogSection"),
   blogLink: $("#blogLink"), addressText: $("#addressText"), phoneSection: $("#phoneSection"), phoneText: $("#phoneText"),
-  kakaoMapLink: $("#kakaoMapLink"), naverMapLink: $("#naverMapLink"), toast: $("#toast"), districtList: $("#districtList")
+  kakaoMapLink: $("#kakaoMapLink"), naverMapLink: $("#naverMapLink"), toast: $("#toast")
 };
-const state = { temples: [], query: "", selected: null, loading: false };
+const state = { temples: [], province: "경기", selected: null, loading: false };
 let toastTimer;
 
 function showScreen(target, focusTarget) {
-  [elements.searchScreen, elements.resultsScreen, elements.detailScreen].forEach((screen) => { screen.hidden = screen !== target; });
+  [elements.homeScreen, elements.detailScreen].forEach((screen) => { screen.hidden = screen !== target; });
   target.classList.remove("screen-enter");
   requestAnimationFrame(() => target.classList.add("screen-enter"));
   window.scrollTo({ top: 0, behavior: "auto" });
@@ -28,60 +27,50 @@ function goTo(params = {}) {
   else window.location.hash = hash;
 }
 
-function createResultCard(temple) {
-  const button = document.createElement("button");
-  button.type = "button";
-  button.className = "temple-card";
-  button.setAttribute("aria-label", `${temple.name} 상세 정보 보기`);
-  const title = document.createElement("span");
-  title.className = "temple-card-title";
-  title.textContent = temple.name;
-  const address = document.createElement("span");
-  address.className = "temple-card-address";
-  address.textContent = temple.address;
-  button.append(title, address);
-  button.addEventListener("click", () => goTo({ temple: temple.id, q: state.query }));
-  return button;
-}
-
 function createTempleLink(temple, className = "temple-link") {
   const button = document.createElement("button");
   button.type = "button";
   button.className = className;
-  button.textContent = temple.name;
+  button.textContent = templeLabel(temple);
   button.setAttribute("aria-label", `${temple.name} 상세 정보 보기`);
   button.addEventListener("click", () => goTo({ temple: temple.id }));
   return button;
 }
 
 function renderBrowseNavigation() {
-  elements.districtList.replaceChildren(...groupByDistrict(state.temples).map((district) => {
-    const section = document.createElement("section");
-    section.className = "district-card";
-    const title = document.createElement("h3");
-    title.textContent = district.name;
-    const list = document.createElement("div");
-    list.className = "district-temples";
-    list.replaceChildren(...district.temples.map((temple) => createTempleLink(temple)));
-    section.append(title, list);
-    return section;
+  const provinces = groupByRegion(state.temples);
+  elements.provinceTabs.replaceChildren(...provinces.map((province) => {
+    const tab = document.createElement("button");
+    tab.type = "button";
+    tab.className = "province-tab";
+    tab.setAttribute("role", "tab");
+    tab.setAttribute("aria-selected", String(province.key === state.province));
+    tab.append(province.name);
+    const count = document.createElement("small");
+    count.textContent = province.count;
+    tab.append(count);
+    tab.addEventListener("click", () => goTo(province.key === "경기" ? {} : { p: province.key }));
+    return tab;
   }));
-
+  const current = provinces.find(({ key }) => key === state.province) ?? provinces[0];
+  elements.regionList.replaceChildren(...current.regions.map((region) => {
+    const row = document.createElement("section");
+    row.className = "region-row";
+    const title = document.createElement("h3");
+    title.textContent = region.name;
+    const count = document.createElement("em");
+    count.textContent = region.temples.length;
+    title.append(count);
+    const list = document.createElement("div");
+    list.className = "region-temples";
+    list.replaceChildren(...region.temples.map((temple) => createTempleLink(temple)));
+    row.append(title, list);
+    return row;
+  }));
 }
 
-function renderResults(query) {
-  state.query = query.trim();
-  elements.searchInput.value = state.query;
-  const matches = searchTemples(state.temples, state.query);
-  elements.resultList.replaceChildren(...matches.map(createResultCard));
-  elements.emptyState.hidden = matches.length !== 0;
-  elements.resultCount.textContent = `${matches.length}개의 검색 결과가 있습니다.`;
-  showScreen(elements.resultsScreen, elements.resultsTitle);
-}
-
-function renderDetail(temple, query) {
+function renderDetail(temple) {
   state.selected = temple;
-  state.query = query.trim();
   elements.templeTitle.textContent = temple.name;
   const embedUrl = toYouTubeEmbedUrl(temple.youtube);
   elements.videoSection.hidden = !embedUrl;
@@ -92,7 +81,8 @@ function renderDetail(temple, query) {
   elements.blogLink.querySelector("span").textContent = `${temple.name} 블로그 바로가기`;
   elements.phoneSection.hidden = !temple.phone;
   elements.phoneText.textContent = temple.phone;
-  elements.addressText.textContent = temple.address;
+  // 도로명과 마지막 번지·호수가 줄바꿈으로 떨어지지 않게 한다
+  elements.addressText.textContent = temple.address.replace(/ ([^ ]+)$/, " $1");
   const mapQuery = encodeURIComponent(temple.address);
   elements.kakaoMapLink.href = temple.lat && temple.lng
     ? `https://map.kakao.com/link/map/${encodeURIComponent(temple.name)},${temple.lat},${temple.lng}`
@@ -105,16 +95,15 @@ function renderRoute() {
   if (!state.temples.length) return;
   const params = routeParams();
   const templeId = params.get("temple") || "";
-  const query = params.get("q") || "";
   if (templeId) {
     const temple = state.temples.find((item) => item.id === templeId);
-    if (temple) return renderDetail(temple, query);
+    if (temple) return renderDetail(temple);
   }
-  if (query) return renderResults(query);
-  state.query = "";
+  state.province = params.get("p") === "인천" ? "인천" : "경기";
   state.selected = null;
   elements.youtubeFrame.src = "";
-  showScreen(elements.searchScreen);
+  renderBrowseNavigation();
+  showScreen(elements.homeScreen);
 }
 
 function showToast(message) {
@@ -145,8 +134,6 @@ function setLoadingState(mode) {
   const loading = mode === "loading";
   state.loading = loading;
   elements.main.setAttribute("aria-busy", String(loading));
-  elements.searchInput.disabled = mode === "loading" || mode === "error";
-  elements.searchButton.disabled = mode === "loading" || mode === "error";
   elements.retryButton.hidden = mode !== "error";
   elements.loadStatus.classList.toggle("error", mode === "error");
   elements.loadStatus.textContent = mode === "loading" ? "교당 정보를 불러오는 중..." : mode === "error" ? "교당 정보를 불러오지 못했습니다." : mode === "stale" ? "정보가 최신이 아닐 수 있습니다." : "";
@@ -167,7 +154,6 @@ async function loadTemples() {
     if (!response.ok) throw new Error(`Google Sheets API request failed: ${response.status}`);
     const fromSnapshot = response.headers.get("X-Data-Source") === "snapshot";
     state.temples = validateTemples(await response.json());
-    renderBrowseNavigation();
     setLoadingState(fromSnapshot ? "stale" : "ready");
     renderRoute();
   } catch (error) {
@@ -176,15 +162,8 @@ async function loadTemples() {
   }
 }
 
-elements.searchForm.addEventListener("submit", (event) => {
-  event.preventDefault();
-  const query = elements.searchInput.value.trim();
-  if (query) goTo({ q: query });
-});
 $("#headerHomeButton").addEventListener("click", () => goTo());
 $("#detailHomeButton").addEventListener("click", () => goTo());
-$("#resultsBackButton").addEventListener("click", () => goTo());
-$("#detailBackButton").addEventListener("click", () => state.query ? goTo({ q: state.query }) : goTo());
 $("#copyAddressButton").addEventListener("click", () => { if (state.selected) copyText(state.selected.address, "주소가 복사되었습니다."); });
 $("#copyPhoneButton").addEventListener("click", () => { if (state.selected?.phone) copyText(state.selected.phone, "전화번호가 복사되었습니다."); });
 elements.retryButton.addEventListener("click", loadTemples);
